@@ -1,0 +1,26 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.14, pytest-9.0.0, pluggy-1.6.0 -- /opt/conda/bin/python3.11
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: /workspace
+plugins: hypothesis-6.141.0
+collecting ... collected 16 items
+
+tests.py::test_swiglu_fwd_quality_check[shape0-dtype0] PASSED            [  6%]
+tests.py::test_swiglu_fwd_quality_check[shape0-dtype1] PASSED            [ 12%]
+tests.py::test_swiglu_fwd_quality_check[shape1-dtype0] PASSED            [ 18%]
+tests.py::test_swiglu_fwd_quality_check[shape1-dtype1] PASSED            [ 25%]
+tests.py::test_swiglu_fwd_quality_check[shape2-dtype0] PASSED            [ 31%]
+tests.py::test_swiglu_fwd_quality_check[shape2-dtype1] PASSED            [ 37%]
+tests.py::test_swiglu_fwd_quality_check[shape3-dtype0] PASSED            [ 43%]
+tests.py::test_swiglu_fwd_quality_check[shape3-dtype1] PASSED            [ 50%]
+tests.py::test_swiglu_fwd_speed_vs_eager_check[shape0-dtype0] PASSED     [ 56%]
+tests.py::test_swiglu_fwd_speed_vs_eager_check[shape0-dtype1] PASSED     [ 62%]
+tests.py::test_swiglu_fwd_speed_vs_eager_check[shape1-dtype0] PASSED     [ 68%]
+tests.py::test_swiglu_fwd_speed_vs_eager_check[shape1-dtype1] PASSED     [ 75%]
+tests.py::test_swiglu_fwd_speed_vs_eager_check[shape2-dtype0] PASSED     [ 81%]
+tests.py::test_swiglu_fwd_speed_vs_eager_check[shape2-dtype1] PASSED     [ 87%]
+tests.py::test_swiglu_fwd_speed_vs_eager_check[shape3-dtype0] PASSED     [ 93%]
+tests.py::test_swiglu_fwd_speed_vs_eager_check[shape3-dtype1] PASSED     [100%]
+
+============================= 16 passed in 11.82s ==============================
