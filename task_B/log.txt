@@ -1,0 +1,805 @@
+Input Notebook:  tests.ipynb
+Output Notebook: notebook_out.ipynb
+Executing notebook with kernel: python3
+Executing Cell 1---------------------------------------
+Ending Cell 1------------------------------------------
+Executing Cell 2---------------------------------------
+Ending Cell 2------------------------------------------
+Executing Cell 3---------------------------------------
+torch version: 2.5.1+cu124
+triton version: 3.1.0
+
+/opt/conda/lib/python3.11/site-packages/tqdm/auto.py:21: TqdmWarning: IProgress not found. Please update jupyter and ipywidgets. See https://ipywidgets.readthedocs.io/en/stable/user_install.html
+  from .autonotebook import tqdm as notebook_tqdm
+
+Ending Cell 3------------------------------------------
+Executing Cell 4---------------------------------------
+Ending Cell 4------------------------------------------
+Executing Cell 5---------------------------------------
+`torch_dtype` is deprecated! Use `dtype` instead!
+
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]
+Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  1.28it/s]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.71it/s]
+Loading checkpoint shards: 100%|██████████| 2/2 [00:01<00:00,  1.62it/s]
+
+
+Ending Cell 5------------------------------------------
+Executing Cell 6---------------------------------------
+Ending Cell 6------------------------------------------
+Executing Cell 7---------------------------------------
+To 
+accomplish 
+this 
+task, 
+we 
+will 
+break 
+it 
+down 
+into 
+several 
+steps:
+
+
+1. 
+Parse 
+the 
+JSON 
+input 
+and 
+extract 
+relevant 
+data.
+
+2. 
+Create 
+a 
+helper 
+function 
+to 
+handle 
+the 
+sorting 
+of 
+expenses 
+and 
+revenues 
+based 
+on 
+the 
+date.
+
+3. 
+Insert 
+the 
+data 
+into 
+a 
+Google 
+Sheet 
+using 
+the 
+`google-api-python-client` 
+library.
+
+
+Let's 
+start 
+by 
+parsing 
+the 
+JSON 
+input 
+and 
+extracting 
+the 
+necessary 
+data.
+
+
+### 
+Step 
+1: 
+Parsing 
+JSON 
+Input
+
+
+We'll 
+define 
+a 
+function 
+to 
+parse 
+the 
+JSON 
+and 
+extract 
+the 
+required 
+fields.
+
+
+```python
+
+import 
+json
+
+
+def 
+parse_json(json_data):
+
+   
+ 
+parsed_data 
+= {
+
+       
+ 
+'date': 
+json_data['date'],
+
+       
+ 
+'revenue': 
+json_data['revenue'],
+
+       
+ 
+'person': 
+json_data['person'],
+
+       
+ 
+'expensesList': 
+json_data['expensesList'],
+
+       
+ 
+'expensesDescList': 
+json_data['expensesDescList'],
+
+       
+ 
+'expensesTypeList': 
+json_data['expensesTypeList']
+
+   
+ }
+
+   
+ 
+return 
+parsed_data
+
+```
+
+
+### 
+Step 
+2: 
+Sorting 
+Expenses 
+and 
+Revenues
+
+
+Next, 
+we'll 
+create 
+a 
+function 
+to 
+sort 
+the 
+expenses 
+and 
+revenues 
+based 
+on 
+the 
+date. 
+We'll 
+use 
+the 
+`google-api-python-client` 
+library 
+to 
+interact 
+with 
+the 
+Google 
+Sheets 
+API.
+
+
+First, 
+ensure 
+you 
+have 
+installed 
+the 
+required 
+libraries:
+
+```bash
+
+pip 
+install 
+google-auth 
+google-auth-oauthlib 
+google-auth-httplib2 
+google-api-python-client
+
+```
+
+
+Now, 
+let's 
+write 
+the 
+function 
+to 
+sort 
+the 
+expenses 
+and 
+revenues.
+
+
+```python
+
+from 
+datetime 
+import 
+datetime
+
+from 
+google.oauth2.credentials 
+import 
+Credentials
+
+from 
+google_auth_oauthlib.flow 
+import 
+InstalledAppFlow
+
+from 
+googleapiclient.discovery 
+import 
+build
+
+from 
+googleapiclient.errors 
+import 
+HttpError
+
+
+def 
+sort_expenses_and_revenues(expenses_list, 
+desc_list, 
+type_list):
+
+   
+ 
+# 
+Convert 
+lists 
+to 
+dictionaries 
+for 
+easier 
+sorting
+
+   
+ 
+expenses_dict 
+= 
+{desc: 
+{'type': 
+type, 
+'date': 
+date} 
+for 
+desc, 
+date, 
+type 
+in 
+zip(desc_list, 
+expenses_list, 
+type_list)}
+
+    
+
+   
+ 
+# 
+Sort 
+by 
+date
+
+   
+ 
+sorted_expenses 
+= 
+sorted(expenses_dict.items(), 
+key=lambda 
+x: 
+datetime.strptime(x[1]['date'], 
+'%d-%m-%Y'))
+
+    
+
+   
+ 
+# 
+Extract 
+sorted 
+keys 
+and 
+values
+
+   
+ 
+sorted_keys, 
+sorted_values 
+= 
+zip(*sorted_expenses)
+
+    
+
+   
+ 
+return 
+list(sorted_keys), 
+list(zip(*sorted_values))
+
+
+def 
+insert_data_to_google_sheet(sheet_id, 
+parsed_data):
+
+   
+ 
+try:
+
+       
+ 
+# 
+Define 
+the 
+scopes 
+and 
+credentials
+
+       
+ 
+SCOPES 
+= 
+['https://www.googleapis.com/auth/spreadsheets']
+
+       
+ 
+flow 
+= 
+InstalledAppFlow.from_client_secrets_file('credentials.json', 
+SCOPES)
+
+       
+ 
+creds 
+= 
+flow.run_local_server(port=0)
+
+        
+
+       
+ 
+service 
+= 
+build('sheets', 
+'v4', 
+credentials=creds)
+
+        
+
+       
+ 
+# 
+Define 
+the 
+range 
+where 
+the 
+data 
+will 
+be 
+inserted
+
+       
+ 
+date_range 
+= 
+'A2:A'
+
+       
+ 
+expense_range 
+= 
+'B2:B'
+
+       
+ 
+description_range 
+= 
+'C2:C'
+
+       
+ 
+type_range 
+= 
+'D2:D'
+
+       
+ 
+person_range 
+= 
+'E2:E'
+
+       
+ 
+revenue_range 
+= 
+'G2:G'
+
+       
+ 
+revenue_desc_range 
+= 
+'H2:H'
+
+       
+ 
+revenue_type_range 
+= 
+'I2:I'
+
+        
+
+       
+ 
+# 
+Insert 
+expenses 
+data
+
+       
+ 
+expenses_keys, 
+expenses_values 
+= 
+sort_expenses_and_revenues(parsed_data['expensesList'], 
+parsed_data['expensesDescList'], 
+parsed_data['expensesTypeList'])
+
+       
+ 
+expenses_data 
+= 
+{k: 
+v 
+for 
+k, 
+v 
+in 
+zip(expenses_keys, 
+expenses_values)}
+
+        
+
+       
+ 
+# 
+Prepare 
+the 
+data 
+to 
+be 
+inserted
+
+       
+ 
+expenses_data 
+= 
+{f"{date_range}{i+1}": 
+f"{date}" 
+for 
+i, 
+date 
+in 
+enumerate(expenses_keys)}
+
+       
+ 
+expenses_data.update({f"{expense_range}{i+1}": 
+f"{amount}" 
+for 
+i, 
+amount 
+in 
+enumerate(expenses_values)})
+
+       
+ 
+expenses_data.update({f"{description_range}{i+1}": 
+f"{desc}" 
+for 
+i, 
+desc 
+in 
+enumerate(expenses_keys)})
+
+       
+ 
+expenses_data.update({f"{type_range}{i+1}": 
+f"{type}" 
+for 
+i, 
+type 
+in 
+enumerate(expenses_keys)})
+
+       
+ 
+expenses_data.update({f"{person_range}{i+1}": 
+f"{parsed_data['person']}" 
+for 
+i 
+in 
+range(len(expenses_keys))})
+
+        
+
+       
+ 
+# 
+Insert 
+revenue 
+data
+
+       
+ 
+revenue_keys, 
+revenue_values 
+= 
+sort_expenses_and_revenues([parsed_data['date']], 
+[parsed_data['date']], 
+[parsed_data['revenue']])
+
+       
+ 
+revenue_data 
+= 
+{k: 
+v 
+for 
+k, 
+v 
+in 
+zip(revenue_keys, 
+revenue_values)}
+
+        
+
+       
+ 
+# 
+Prepare 
+the 
+data 
+to 
+be 
+inserted
+
+       
+ 
+revenue_data 
+= 
+{f"{revenue_range}{i+1}": 
+f"{revenue}" 
+for 
+i, 
+revenue 
+in 
+enumerate(revenue_values)}
+
+       
+ 
+revenue_data.update({f"{revenue_desc_range}{i+1}": 
+f"{parsed_data['date']}" 
+for 
+i 
+in 
+range(len(revenue_keys))})
+
+       
+ 
+revenue_data.update({f"{revenue_type_range}{i+1}": 
+f"{parsed_data['person']}"
+
+Ending Cell 7------------------------------------------
+Executing Cell 8---------------------------------------
+Ending Cell 8------------------------------------------
+Executing Cell 9---------------------------------------
+Ending Cell 9------------------------------------------
+Executing Cell 10--------------------------------------
+Ending Cell 10-----------------------------------------
+Executing Cell 11--------------------------------------
+torch.Size([1, 700, 2048])
+Ending Cell 11-----------------------------------------
+Executing Cell 12--------------------------------------
+Ending Cell 12-----------------------------------------
+Executing Cell 13--------------------------------------
+Ending Cell 13-----------------------------------------
+Executing Cell 14--------------------------------------
+Ending Cell 14-----------------------------------------
+Executing Cell 15--------------------------------------
+Ending Cell 15-----------------------------------------
+Executing Cell 16--------------------------------------
+Ending Cell 16-----------------------------------------
+Executing Cell 17--------------------------------------
+Ending Cell 17-----------------------------------------
+Executing Cell 18--------------------------------------
+Ending Cell 18-----------------------------------------
+Executing Cell 19--------------------------------------
+Ending Cell 19-----------------------------------------
+Executing Cell 20--------------------------------------
+Ending Cell 20-----------------------------------------
+Executing Cell 21--------------------------------------
+Ending Cell 21-----------------------------------------
+Executing Cell 22--------------------------------------
+Ending Cell 22-----------------------------------------
+Executing Cell 23--------------------------------------
+Ending Cell 23-----------------------------------------
+Executing Cell 24--------------------------------------
+Ending Cell 24-----------------------------------------
+Executing Cell 25--------------------------------------
+✅ Triton FP8 and Torch match
+
+Ending Cell 25-----------------------------------------
+Executing Cell 26--------------------------------------
+Ending Cell 26-----------------------------------------
+Executing Cell 27--------------------------------------
+Ending Cell 27-----------------------------------------
+Executing Cell 28--------------------------------------
+Ending Cell 28-----------------------------------------
+Executing Cell 29--------------------------------------
+M: 16384 K: 2048 N: 6144
+
+Triton time cost: 6.462988376617432 (tflops 32.66387315452357) + quant: 0.19779515266418457 (bandwidth 173.71375337157914)
+
+Torch time cost: 9.963322401046753 (tflops 21.188336985944876)
+M: 16384 K: 2048
+
+Torch time cost: 0.0022990237921476364
+Triton time cost: 0.0003845561295747757
+M: 16384 K: 2048 N: 2048
+
+Triton time cost: 2.258796453475952 (tflops 31.15320287907171) + quant: 0.19716167449951172 (bandwidth 174.27189363866503)
+
+Torch time cost: 3.039342164993286 (tflops 23.152623284130776)
+M: 16384 K: 2048
+
+Torch time cost: 0.0023207291960716248
+Triton time cost: 0.0003848578780889511
+M: 16384 K: 2048 N: 22016
+
+Triton time cost: 24.475144147872925 (tflops 30.907437984410418) + quant: 0.19985365867614746 (bandwidth 171.9244901274396)
+
+Torch time cost: 43.616857290267944 (tflops 17.343386179239346)
+M: 16384 K: 11008 N: 2048
+
+Triton time cost: 11.570438861846924 (tflops 32.689511994410985) + quant: 1.4499738216400146 (bandwidth 127.37029522306193)
+
+Torch time cost: 21.454784631729126 (tflops 17.629261092445688)
+M: 16384 K: 11008
+
+Torch time cost: 0.012999768368899822
+Triton time cost: 0.0028238091617822647
+Triton time 44.76736783981323 Torch time 78.07430648803711 Quant time 2.0447843074798584
+M: 32 K: 2048 N: 6144
+
+Triton time cost: 0.042185306549072266 (tflops 9.773944867186644) + quant: 0.026473522186279297 (bandwidth 2.5349427827469517)
+Torch time cost: 0.06269359588623047 (tflops 6.576698219132747)
+M: 32 K: 2048
+Torch time cost: 6.11674040555954e-05
+Triton time cost: 5.314406007528305e-05
+M: 32 K: 2048 N: 2048
+
+Triton time cost: 0.03345155715942383 (tflops 4.1085965839196) + quant: 0.026103973388671875 (bandwidth 2.570829467253544)
+Torch time cost: 0.020618438720703125 (tflops 6.665827385562251)
+M: 32 K: 2048
+Torch time cost: 5.747564136981964e-05
+Triton time cost: 5.192216485738754e-05
+M: 32 K: 2048 N: 22016
+
+Triton time cost: 0.16470789909362793 (tflops 8.97023614504448) + quant: 0.02694249153137207 (bandwidth 2.490818784218893)
+
+Torch time cost: 0.22682785987854004 (tflops 6.513612351741727)
+M: 32 K: 11008 N: 2048
+
+Triton time cost: 0.09542274475097656 (tflops 7.741701172397263) + quant: 0.02678656578063965 (bandwidth 13.466083967385925)
+Torch time cost: 0.10227823257446289 (tflops 7.222791754581505)
+M: 32 K: 11008
+Torch time cost: 5.8317556977272034e-05
+Triton time cost: 5.030166357755661e-05
+Triton time 0.3357675075531006 Torch time 0.4124181270599365 Quant time 0.10630655288696289
+
+Ending Cell 29-----------------------------------------
+Executing Cell 30--------------------------------------
+GeMV-performance-FP16 vs INT8:
+      M  cuBLAS FP16  Triton INT8  Triton FP16
+0   1.0     0.040960     0.042848     0.052992
+1   2.0     0.053472     0.039328     0.053168
+2   4.0     0.053600     0.039232     0.053248
+3   8.0     0.053760     0.040960     0.053248
+4  16.0     0.053760     0.042976     0.053568
+5  32.0     0.051296     0.043152     0.054720
+6  64.0     0.053120     0.056672     0.057344
+
+GeMM-performance-FP16 vs INT8:
+          M  cuBLAS FP16  Triton INT8  Triton FP16
+0    4096.0     1.096704     1.172928     1.416768
+1    5120.0     1.429360     1.428016     1.819472
+2    6144.0     1.916880     1.734624     2.248544
+3    7168.0     2.314272     2.154496     2.729664
+4    8192.0     2.750464     2.362592     3.042784
+5    9216.0     3.167168     2.717792     3.498400
+6   10240.0     3.509248     2.930688     3.852576
+7   11264.0     3.976064     3.323168     4.311072
+8   12288.0     4.280992     3.753568     4.776048
+9   13312.0     4.734976     3.977232     5.105568
+10  14336.0     5.180768     4.335168     5.588592
+11  15360.0     5.664800     4.639968     5.789152
+12  16384.0     5.865504     4.927008     6.338336
+13  17408.0     6.341568     5.262336     6.731088
+14  18432.0     6.540256     5.483872     7.000064
+15  19456.0     7.073840     5.868976     7.477248
+16  20480.0     7.386944     6.183088     7.837408
+
+Quantize-performance-decoding:
+      M     Torch    Triton
+0   1.0  0.019632  0.004224
+1   2.0  0.025984  0.004384
+2   4.0  0.026848  0.004352
+3   8.0  0.028064  0.004384
+4  16.0  0.030784  0.004576
+5  32.0  0.038912  0.005088
+6  64.0  0.038800  0.006208
+
+Quantize-performance-prefill:
+         M     Torch    Triton
+0   1024.0  0.313344  0.030048
+1   1280.0  0.401152  0.036144
+2   1536.0  0.478736  0.041840
+3   1792.0  0.565248  0.048192
+4   2048.0  0.641440  0.054048
+5   2304.0  0.733024  0.060032
+6   2560.0  0.832816  0.066272
+7   2816.0  0.901120  0.072160
+8   3072.0  0.998080  0.078240
+9   3328.0  1.088320  0.084528
+10  3584.0  1.167168  0.090496
+11  3840.0  1.263968  0.096768
+12  4096.0  1.353760  0.102560
+13  4352.0  1.445184  0.108832
+14  4608.0  1.546592  0.115104
+15  4864.0  1.605456  0.120896
+16  5120.0  1.736672  0.126976
+
+<Figure size 640x480 with 1 Axes>
+<Figure size 640x480 with 1 Axes>
+<Figure size 640x480 with 1 Axes>
+<Figure size 640x480 with 1 Axes>
+Ending Cell 30-----------------------------------------
